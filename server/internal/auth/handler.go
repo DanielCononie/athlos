@@ -2,6 +2,8 @@ package auth
 
 import (
 	"errors"
+	"strconv"
+	"strings"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -21,6 +23,7 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(app *fiber.App) {
 	app.Post("/register", h.Register)
 	app.Post("/login", h.Login)
+	app.Get("/me", h.RequireAuth, h.Me)
 }
 
 // ----------- Handlers -----------
@@ -61,9 +64,18 @@ func (h *Handler) Register(c *fiber.Ctx) error {
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "user registered successfully",
-		"user":    user,
+	token, err := h.service.GenerateToken(user)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "token generation failed",
+			"message": "the user was registered but could not be signed in",
+		})
+	}
+
+	return c.Status(fiber.StatusCreated).JSON(AuthResponse{
+		Message: "user registered successfully",
+		Token:   token,
+		User:    user,
 	})
 }
 
@@ -103,8 +115,79 @@ func (h *Handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
+	token, err := h.service.GenerateToken(user)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "token generation failed",
+			"message": "the user could not be signed in",
+		})
+	}
+
+	return c.JSON(AuthResponse{
+		Message: "login successful",
+		Token:   token,
+		User:    user,
+	})
+}
+
+// RequireAuth validates a bearer token before protected handlers run.
+func (h *Handler) RequireAuth(c *fiber.Ctx) error {
+	authHeader := c.Get("Authorization")
+	tokenString, ok := strings.CutPrefix(authHeader, "Bearer ")
+	if !ok || strings.TrimSpace(tokenString) == "" {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "missing token",
+			"message": "a bearer token is required",
+		})
+	}
+
+	claims, err := h.service.ValidateToken(tokenString)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "invalid token",
+			"message": "the bearer token is invalid or expired",
+		})
+	}
+
+	c.Locals("claims", claims)
+
+	return c.Next()
+}
+
+// Me returns the authenticated user for the active JWT.
+func (h *Handler) Me(c *fiber.Ctx) error {
+	claims, ok := c.Locals("claims").(*Claims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "invalid token",
+			"message": "the bearer token is invalid or expired",
+		})
+	}
+
+	userID, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "invalid token",
+			"message": "the bearer token is invalid or expired",
+		})
+	}
+
+	user, err := h.service.GetUserByID(userID)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"error":   "user lookup failed",
+			"message": "the authenticated user could not be loaded",
+		})
+	}
+
+	if user == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "user not found",
+			"message": "the authenticated user no longer exists",
+		})
+	}
+
 	return c.JSON(fiber.Map{
-		"message": "login successful",
-		"user":    user,
+		"user": user,
 	})
 }

@@ -6,6 +6,7 @@ import (
 )
 
 type Repository interface {
+	GetUserByID(ctx context.Context, id int) (*User, error)
 	GetUserByEmail(ctx context.Context, email string) (*User, error)
 	CreateUser(ctx context.Context, user *User) error
 }
@@ -32,10 +33,39 @@ func (r *repository) CreateUser(ctx context.Context, user *User) error {
 	)
 }
 
+// GetUserByID implements Repository.
+func (r *repository) GetUserByID(ctx context.Context, id int) (*User, error) {
+	query := `
+		SELECT id, email, is_email_verified, two_factor_enabled, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+
+	var user User
+
+	err := r.db.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.Email,
+		&user.IsEmailVerified,
+		&user.TwoFactorEnabled,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // GetUserByEmail implements Repository.
 func (r *repository) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	query := `
-		SELECT id, email, password_hash, created_at, updated_at
+		SELECT id, email, password_hash, is_email_verified, two_factor_enabled, created_at, updated_at
 		FROM users
 		WHERE email = $1
 	`
@@ -46,6 +76,8 @@ func (r *repository) GetUserByEmail(ctx context.Context, email string) (*User, e
 		&user.ID,
 		&user.Email,
 		&user.PasswordHash,
+		&user.IsEmailVerified,
+		&user.TwoFactorEnabled,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)

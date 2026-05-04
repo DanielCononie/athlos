@@ -2,6 +2,12 @@ package auth
 
 import "time"
 
+type AuthResponse struct {
+	Message string `json:"message"`
+	Token   string `json:"token"`
+	User    *User  `json:"user"`
+}
+
 type User struct {
 	ID              int    `json:"id"`
 	Email           string `json:"email"`

@@ -19,7 +19,6 @@ export function LoginForm() {
 
   const handleSubmit = async () => {
     const trimmedEmail = email.trim();
-    console.log("Hi")
     if (!trimmedEmail || !password) {
       setError("Enter your email and password.");
       return;

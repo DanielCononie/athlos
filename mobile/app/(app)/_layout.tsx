@@ -1,9 +1,18 @@
 import { Redirect, Stack } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "@/features/auth/hooks/useAuth";
 
 export default function AppLayout() {
-  const { user } = useAuth();
+  const { isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator color="#2f6fed" />
+      </View>
+    );
+  }
 
   if (!user) {
     return <Redirect href="/(auth)/login" />;
@@ -15,3 +24,12 @@ export default function AppLayout() {
     </Stack>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingScreen: {
+    alignItems: "center",
+    backgroundColor: "#f4f7fb",
+    flex: 1,
+    justifyContent: "center",
+  },
+});

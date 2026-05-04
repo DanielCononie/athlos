@@ -12,6 +12,11 @@ export type AuthUser = {
 
 type AuthResponse = {
   message: string;
+  token: string;
+  user: AuthUser;
+};
+
+type MeResponse = {
   user: AuthUser;
 };
 
@@ -31,10 +36,46 @@ export const API_BASE_URL =
     : defaultApiUrl;
 
 export class AuthApiError extends Error {
-  constructor(message: string) {
+  status?: number;
+
+  constructor(message: string, status?: number) {
     super(message);
     this.name = "AuthApiError";
+    this.status = status;
   }
+}
+
+async function parseJsonResponse<T>(response: Response, fallbackMessage: string) {
+  const data = (await response.json().catch(() => null)) as (T & ApiErrorResponse) | null;
+
+  if (!response.ok) {
+    const message = data?.message ?? fallbackMessage;
+    throw new AuthApiError(message, response.status);
+  }
+
+  if (!data) {
+    throw new AuthApiError("The server returned an unexpected response.", response.status);
+  }
+
+  return data as T;
+}
+
+export async function apiFetch(path: string, token: string, init: RequestInit = {}) {
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        ...init.headers,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch {
+    throw new AuthApiError("Could not reach the server. Check that the API is running.");
+  }
+
+  return response;
 }
 
 async function postAuth(path: "/login" | "/register", email: string, password: string) {
@@ -52,22 +93,16 @@ async function postAuth(path: "/login" | "/register", email: string, password: s
     throw new AuthApiError("Could not reach the server. Check that the API is running.");
   }
 
-  const data = (await response.json().catch(() => null)) as AuthResponse | ApiErrorResponse | null;
+  const data = await parseJsonResponse<AuthResponse>(
+    response,
+    "Authentication failed. Please try again.",
+  );
 
-  if (!response.ok) {
-    const message =
-      data && "message" in data && data.message
-        ? data.message
-        : "Authentication failed. Please try again.";
-
-    throw new AuthApiError(message);
-  }
-
-  if (!data || !("user" in data)) {
+  if (!data.token || !data.user) {
     throw new AuthApiError("The server returned an unexpected response.");
   }
 
-  return data.user;
+  return data;
 }
 
 export function loginUser(email: string, password: string) {
@@ -76,4 +111,15 @@ export function loginUser(email: string, password: string) {
 
 export function registerUser(email: string, password: string) {
   return postAuth("/register", email, password);
+}
+
+export async function getAuthenticatedUser(token: string) {
+  const response = await apiFetch("/me", token);
+  const data = await parseJsonResponse<MeResponse>(response, "Your session has expired.");
+
+  if (!data.user) {
+    throw new AuthApiError("The server returned an unexpected response.", response.status);
+  }
+
+  return data.user;
 }

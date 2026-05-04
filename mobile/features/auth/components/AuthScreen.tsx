@@ -101,9 +101,9 @@ export function AuthScreen({
           <Animated.View entering={FadeInUp.duration(560).springify()} style={styles.brandBlock}>
             <View style={styles.logoMark}>
               <View style={styles.logoPulse} />
-              <Text style={styles.logoText}>F</Text>
+              <Text style={styles.logoText}>A</Text>
             </View>
-            <Text style={styles.appName}>Fitness</Text>
+            <Text style={styles.appName}>Athlos</Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(80).duration(620).springify()} style={styles.panel}>
@@ -187,7 +187,7 @@ export function AuthButton({ disabled = false, label, onPress }: AuthButtonProps
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#f4f7fb",
+    backgroundColor: "#3b8af5",
   },
   background: {
     ...StyleSheet.absoluteFillObject,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     shadowColor: "#111827",
     shadowOffset: { width: 0, height: 22 },
     shadowOpacity: 0.14,
-    shadowRadius: 34,
+    shadowRadius: 50,
     elevation: 10,
   },
   header: {
