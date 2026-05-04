@@ -54,21 +54,6 @@ Start the local PostgreSQL container if you are using the project’s existing c
 make db-start
 ```
 
-Create the users table:
-
-```sql
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    is_email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-    two_factor_secret TEXT,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-```
-
 ## Run
 
 Run the API server and Expo app together:
