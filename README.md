@@ -43,7 +43,7 @@ cp server/.env.sample server/.env
 Update `server/.env` with your local values:
 
 ```bash
-DB_URL=postgres://postgres:postgres@localhost:5432/fitness_db?sslmode=disable
+DB_URL=DB_URL=postgres://username:password@host:port/database?sslmode=disable
 JWT_SECRET=replace-with-at-least-32-random-characters
 CORS_ORIGINS=http://localhost:8081,http://localhost:19006,http://localhost:19000
 ```
