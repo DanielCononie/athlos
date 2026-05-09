@@ -14,7 +14,7 @@ export function WorkoutBaseScreen() {
 const styles = StyleSheet.create({
     screen: {
         flex: 1,
-        backgroundColor: "#3b8af5",
+        backgroundColor: "#f58e8e",
       },
 
 });
