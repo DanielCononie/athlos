@@ -58,6 +58,7 @@ export function WorkoutBaseScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [form, setForm] = useState<WorkoutForm>(emptyForm);
+  const [historySearch, setHistorySearch] = useState("");
   const [stagedWorkouts, setStagedWorkouts] = useState<StagedWorkout[]>([]);
 
   const loadWorkoutData = useCallback(async () => {
@@ -144,7 +145,29 @@ export function WorkoutBaseScreen() {
     [summary],
   );
 
-  const recentWorkouts = useMemo(() => workouts.slice(0, 5), [workouts]);
+  const visibleHistoryWorkouts = useMemo(() => {
+    const query = historySearch.trim().toLowerCase();
+
+    if (!query) {
+      return workouts.slice(0, 5);
+    }
+
+    return workouts
+      .filter((workout) => {
+        const searchableText = [
+          workout.exercise,
+          workout.date,
+          String(workout.reps),
+          String(workout.weight),
+          String(Math.round(workout.length / 60000)),
+        ]
+          .join(" ")
+          .toLowerCase();
+
+        return searchableText.includes(query);
+      })
+      .slice(0, 8);
+  }, [historySearch, workouts]);
 
   const captureSectionOffset = useCallback(
     (section: WorkoutSection) => (event: LayoutChangeEvent) => {
@@ -155,6 +178,11 @@ export function WorkoutBaseScreen() {
 
   const scrollToSection = useCallback((section: WorkoutSection) => {
     setActiveSection(section);
+
+    if (section === "addNew") {
+      scrollRef.current?.scrollToEnd({ animated: true });
+      return;
+    }
 
     const y = sectionOffsets.current[section] ?? 0;
     scrollRef.current?.scrollTo({
@@ -299,9 +327,29 @@ export function WorkoutBaseScreen() {
 
         <View onLayout={captureSectionOffset("history")} style={styles.section}>
           <SectionHeader title="History" />
+          <View style={styles.historySearchShell}>
+            <TextInput
+              onChangeText={setHistorySearch}
+              placeholder="Search workouts"
+              placeholderTextColor="rgba(255, 255, 255, 0.5)"
+              style={styles.historySearchInput}
+              value={historySearch}
+            />
+            {historySearch ? (
+              <Pressable
+                onPress={() => setHistorySearch("")}
+                style={({ pressed }) => [
+                  styles.clearSearchButton,
+                  pressed && styles.pressedButton,
+                ]}
+              >
+                <Text style={styles.clearSearchText}>Clear</Text>
+              </Pressable>
+            ) : null}
+          </View>
           <View style={styles.historyList}>
-            {recentWorkouts.length > 0 ? (
-              recentWorkouts.map((workout, index) => (
+            {visibleHistoryWorkouts.length > 0 ? (
+              visibleHistoryWorkouts.map((workout, index) => (
                 <Animated.View
                   entering={FadeInDown.delay(100 + index * 60).duration(420).springify()}
                   key={workout.id}
@@ -315,7 +363,9 @@ export function WorkoutBaseScreen() {
                 </Animated.View>
               ))
             ) : (
-              <Text style={styles.emptyText}>No workouts logged yet.</Text>
+              <Text style={styles.emptyText}>
+                {historySearch ? "No workouts match your search." : "No workouts logged yet."}
+              </Text>
             )}
           </View>
         </View>
@@ -618,6 +668,40 @@ const styles = StyleSheet.create({
   },
   historyList: {
     gap: 10,
+  },
+  historySearchShell: {
+    alignItems: "center",
+    backgroundColor: "rgba(17, 24, 39, 0.74)",
+    borderColor: "rgba(255, 255, 255, 0.16)",
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: "row",
+    gap: 8,
+    height: 48,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+  },
+  historySearchInput: {
+    color: "#ffffff",
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "800",
+    height: 46,
+    letterSpacing: 0,
+  },
+  clearSearchButton: {
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    borderRadius: 8,
+    height: 32,
+    justifyContent: "center",
+    paddingHorizontal: 10,
+  },
+  clearSearchText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 0,
   },
   historyRow: {
     alignItems: "center",
