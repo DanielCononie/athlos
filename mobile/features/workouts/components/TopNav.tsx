@@ -1,59 +1,130 @@
-import { View, StyleSheet, Text, Pressable } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
-export function TopNav() {
-    return (
-        <View>
-            <View style={styles.container}>
-                <Text style={styles.selection}>Summary</Text>
-                <Text style={styles.selection}>History</Text>
-                <Text style={styles.selection}>Add new</Text>
+export type WorkoutSection = "summary" | "history" | "addNew";
+
+type TopNavProps = {
+  activeSection: WorkoutSection;
+  onSelectSection: (section: WorkoutSection) => void;
+};
+
+const sections: { key: WorkoutSection; label: string }[] = [
+  { key: "summary", label: "Summary" },
+  { key: "history", label: "History" },
+  { key: "addNew", label: "Add new" },
+];
+
+export function TopNav({ activeSection, onSelectSection }: TopNavProps) {
+  const activeIndex = sections.findIndex((section) => section.key === activeSection);
+
+  return (
+    <Animated.View entering={FadeInDown.duration(420).springify()} style={styles.shell}>
+      <View style={styles.container}>
+        {sections.map((section) => {
+          const isActive = activeSection === section.key;
+
+          return (
+            <Pressable
+              key={section.key}
+              onPress={() => onSelectSection(section.key)}
+              style={({ pressed }) => [
+                styles.selection,
+                isActive && styles.activeSelection,
+                pressed && styles.pressedSelection,
+              ]}
+            >
+              <Text style={[styles.selectionText, isActive && styles.activeSelectionText]}>
+                {section.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={styles.dividerShell}>
+        <View style={styles.progressSegments}>
+          {sections.map((section, index) => {
+            const isCurrent = index === activeIndex;
+            const isComplete = index < activeIndex;
+
+            return (
+              <View
+                key={section.key}
+                style={[
+                  styles.progressSegment,
+                  isComplete && styles.completeProgressSegment,
+                  isCurrent && styles.activeProgressSegment,
+                ]}
+              />
+            );
+          })}
         </View>
-        <LinearGradient
-            colors={[
-                "rgba(0,0,0,0)",
-                "rgba(0,0,0,1)",
-                "rgba(0,0,0,0)"
-            ]}
-            locations={[0.10, 0.45, 0.99]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.divider}
-        />
-        </View>
-        
-        
-    )
+      </View>
+    </Animated.View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        padding: 3,
-        display: "flex",
-        justifyContent: "space-around",
-        flexDirection: "row",
-        marginTop: 25
-    },
-    selection: {
-        color: "white",
-        fontSize: 14,
-        fontWeight: "900",
-        letterSpacing: 1,
-        textTransform: "uppercase",
-        padding: 10,
-        width: "30%",
-        height: 40,
-        borderWidth: 2,         
-        borderColor: 'black',    
-        borderStyle: 'solid',
-        borderRadius: 8,
-        backgroundColor: "black",
-        alignItems: "center",
-        textAlign: "center"
-    },
-    divider: {
-        height: 4,
-        width: "100%",
-        marginTop: 10
-    }
-})
+  shell: {
+    paddingHorizontal: 14,
+    paddingTop: 16,
+  },
+  container: {
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "space-between",
+  },
+  selection: {
+    alignItems: "center",
+    backgroundColor: "rgba(17, 24, 39, 0.92)",
+    borderColor: "rgba(255, 255, 255, 0.18)",
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    height: 42,
+    justifyContent: "center",
+  },
+  activeSelection: {
+    backgroundColor: "#ffffff",
+    borderColor: "#ffffff",
+  },
+  pressedSelection: {
+    transform: [{ scale: 0.97 }],
+  },
+  selectionText: {
+    color: "#ffffff",
+    fontSize: 12,
+    fontWeight: "900",
+    letterSpacing: 0,
+    textTransform: "uppercase",
+  },
+  activeSelectionText: {
+    color: "#111827",
+  },
+  dividerShell: {
+    height: 10,
+    marginTop: 10,
+    width: "100%",
+  },
+  progressSegments: {
+    flexDirection: "row",
+    gap: 8,
+    height: 10,
+    width: "100%",
+  },
+  progressSegment: {
+    backgroundColor: "rgba(255, 255, 255, 0.18)",
+    borderRadius: 8,
+    flex: 1,
+    height: 4,
+    marginTop: 3,
+  },
+  completeProgressSegment: {
+    backgroundColor: "rgba(255, 255, 255, 0.58)",
+  },
+  activeProgressSegment: {
+    backgroundColor: "#ffffff",
+    height: 8,
+    marginTop: 1,
+  },
+});

@@ -11,6 +11,13 @@ type Workout struct {
 	CreatedAt  string `json:"created_at"`
 }
 
+type WorkoutSummary struct {
+	FavoriteWorkout        string  `json:"favorite_workout"`
+	HoursExercisedThisYear float64 `json:"hours_exercised_this_year"`
+	LastWorkoutDate        string  `json:"last_workout_date"`
+	TotalWorkoutsThisYear  int     `json:"total_workouts_this_year"`
+}
+
 // CREATE TABLE workouts (
 //     id SERIAL PRIMARY KEY,
 //     customer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,

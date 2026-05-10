@@ -154,6 +154,42 @@ func (h *Handler) RequireAuth(c *fiber.Ctx) error {
 	return c.Next()
 }
 
+// RequireRouteIDMatchesToken ensures the route id belongs to the authenticated user.
+func (h *Handler) RequireRouteIDMatchesToken(c *fiber.Ctx) error {
+	claims, ok := c.Locals("claims").(*Claims)
+	if !ok {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "invalid token",
+			"message": "the bearer token is invalid or expired",
+		})
+	}
+
+	tokenUserID, err := strconv.Atoi(claims.Subject)
+	if err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error":   "invalid token",
+			"message": "the bearer token is invalid or expired",
+		})
+	}
+
+	routeUserID, err := c.ParamsInt("id")
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"error":   "invalid id",
+			"message": "id must be a number",
+		})
+	}
+
+	if routeUserID != tokenUserID {
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+			"error":   "forbidden",
+			"message": "the route id does not match the authenticated user",
+		})
+	}
+
+	return c.Next()
+}
+
 // Me returns the authenticated user for the active JWT.
 func (h *Handler) Me(c *fiber.Ctx) error {
 	claims, ok := c.Locals("claims").(*Claims)

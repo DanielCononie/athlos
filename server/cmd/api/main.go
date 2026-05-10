@@ -4,6 +4,7 @@ import (
 	"fitness/internal/auth"
 	"fitness/internal/db"
 	"fitness/internal/logger"
+	"fitness/internal/workouts"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -44,6 +45,12 @@ func main() {
 
 	authHandler.RegisterRoutes(app)
 
+	workoutsRepo := workouts.NewRepository(database)
+	workoutsService := workouts.NewService(workoutsRepo, log)
+	workoutsHandler := workouts.NewHandler(workoutsService)
+
+	registerProtectedWorkoutRoutes(app, workoutsHandler, authHandler.RequireAuth, authHandler.RequireRouteIDMatchesToken)
+
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
 			"status": "ok",
@@ -56,6 +63,16 @@ func main() {
 		log.Error("failed to start server", "error", err)
 	}
 
+}
+
+func registerProtectedWorkoutRoutes(
+	app *fiber.App,
+	workoutsHandler *workouts.Handler,
+	requireAuth fiber.Handler,
+	requireRouteUserID fiber.Handler,
+) {
+	protectedWorkouts := app.Group("/workouts", requireAuth)
+	workoutsHandler.RegisterRoutes(protectedWorkouts, requireRouteUserID)
 }
 
 func allowedOrigins() string {
